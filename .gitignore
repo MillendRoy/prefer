@@ -1,0 +1,40 @@
+# Data
+data/*.csv
+data/*.npy
+data/*.json
+data/*.jsonl
+scripts/output/
+notebooks/figures_paper/
+notebooks/pca_5d.pdf
+notebooks/pca_5d_reviews.pdf
+EOF
+
+# Outputs
+outputs/
+weights/
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Environment
+.venv/
+*.egg-info/
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+EOF__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+EOF
