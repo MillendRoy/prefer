@@ -15,7 +15,7 @@ from .online import (
     online_omd_update,
     online_omd_update_centered
 )
-from .utils import kl_divergence, get_phi_matrix,ensure_global_index
+from .utils import kl_divergence, get_phi_matrix,ensure_global_index, normalize_simplex
 
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -43,6 +43,8 @@ def run_online_experiment(
     synthetic_oracle: bool = False,
     oracle_noise_scale: float = 0.03,
     seed: int = 42,
+    w_init_override: Optional[np.ndarray] = None,
+    verbose: bool = True,
 ):
     """
     Runs an online learning experiment with the given extractor and feedback provider.
@@ -84,12 +86,23 @@ def run_online_experiment(
     #     phi_cols=phi_cols,
     #     beta=beta_init,
     # )
-    # can you help me start with uniform w_init instead of bootstrapping from user's own text?
-    w_init = np.ones(K, dtype=np.float32) / K
+    # Use the paper's uniform initialization unless an experiment explicitly
+    # supplies a learner-side profile, e.g. from the fit half of a held-out split.
+    if w_init_override is None:
+        w_init = np.ones(K, dtype=np.float32) / K
+    else:
+        candidate_w_init = np.asarray(w_init_override, dtype=np.float32)
+        if candidate_w_init.shape != (K,):
+            raise ValueError(
+                f"w_init_override must have shape {(K,)}, got {candidate_w_init.shape}."
+            )
+        if not np.all(np.isfinite(candidate_w_init)):
+            raise ValueError("w_init_override contains NaN or infinity.")
+        w_init = normalize_simplex(candidate_w_init)
 
 
     # Step 2: We don't necessarily need it here, since feedback_provider can use phi_rows and w_true directly, but we can create a synthetic oracle w_true for testing if desired.
-    w_true = feedback_provider.w_true if synthetic_oracle else None
+    w_true = getattr(feedback_provider, "w_true", None) if synthetic_oracle else None
     # if synthetic_oracle:
     #     w_true = make_synthetic_true_preference(
     #         df_sent=df_sent,
@@ -371,16 +384,17 @@ def run_online_experiment(
 
         logs.append(log)
 
-        if use_policy == "omd":
-            print(f"Round {t+1}/{len(product_ids)} - Product ID: {product_id}, Feedback: {f_t:.4f}, Cosine OMD: {log.get('cos_omd', 'N/A')}, Selected idx: {out.selected_global_idx}")
-            # print("w_omd top aspects", np.argsort(-w_omd)[:5])
-            # print("w_omd", np.round(w_omd, 2))
-        else:
-            print(f"Round {t+1}/{len(product_ids)} - Product ID: {product_id}, Feedback: {f_t:.4f}, Cosine Static: {log.get('cos_boltz', 'N/A')}, Selected idx: {out.selected_global_idx}")
-            # print("w_boltz top aspects", np.argsort(-w_boltz)[:5])
-            # print("w_boltz", np.round(w_boltz, 2))
-        # print("top z aspects", np.argsort(-out.z_t)[:5])
-        # print("z_t", np.round(out.z_t, 2))
+        if verbose:
+            if use_policy == "omd":
+                print(f"Round {t+1}/{len(product_ids)} - Product ID: {product_id}, Feedback: {f_t:.4f}, Cosine OMD: {log.get('cos_omd', 'N/A')}, Selected idx: {out.selected_global_idx}")
+                # print("w_omd top aspects", np.argsort(-w_omd)[:5])
+                # print("w_omd", np.round(w_omd, 2))
+            else:
+                print(f"Round {t+1}/{len(product_ids)} - Product ID: {product_id}, Feedback: {f_t:.4f}, Cosine Static: {log.get('cos_boltz', 'N/A')}, Selected idx: {out.selected_global_idx}")
+                # print("w_boltz top aspects", np.argsort(-w_boltz)[:5])
+                # print("w_boltz", np.round(w_boltz, 2))
+            # print("top z aspects", np.argsort(-out.z_t)[:5])
+            # print("z_t", np.round(out.z_t, 2))
 
 
     return ExperimentResult(

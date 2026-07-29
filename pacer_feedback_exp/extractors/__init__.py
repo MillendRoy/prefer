@@ -5,3 +5,7 @@ from .common import (
 )
 from .gumbel import GumbelExtractor
 from .mmr import MMRExtractor
+from .random import RandomExtractor 
+
+
+__all__ = ["GumbelExtractor", "MMRExtractor", "RandomExtractor"]
