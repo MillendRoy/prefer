@@ -13,10 +13,13 @@ Reports:
                              per-aspect accuracy, per-judge accuracy, Fleiss' kappa.
   Part 2 (personalization)   PREFER win rate vs 50% (binomial), per-aspect win rate,
                              Fleiss' kappa, Wilcoxon on Likert ratings, position-bias check.
+  Part 1 bonus round        sentence-to-label matching accuracy vs chance, per-label recall and
+                             "none of these" rate (label validity), Fleiss' kappa  (needs matching.csv).
   Simulator validation       Spearman between human Likert ratings and the simulated
                              aspect mass of each summary (swap in your f_t column if different).
 """
 import argparse
+import os
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -76,6 +79,29 @@ def main():
     counts = (intr.pivot_table(index="question", columns="chosen_option", values="session_id", aggfunc="count")
               .reindex(columns=range(1, n_opts + 1), fill_value=0).fillna(0))
     print(f"  Fleiss' kappa (agreement on which sentence is the intruder): {fleiss_kappa(counts.values):.3f}\n")
+
+    # ---------- Part 1 bonus round: label validity ----------
+    mpath = f"{a.dir}/matching.csv"
+    if os.path.exists(mpath):
+        m = pd.read_csv(mpath)
+        m = m[m.session_id.isin(sessions)]
+        n_choices = m.labels_shown.astype(str).str.split().str.len() + 1  # labels + "none of these"
+        chance = float((1 / n_choices).mean())
+        print("PART 1 BONUS  Sentence-to-label matching (label validity)")
+        print("  Overall accuracy:", binom(m.is_correct.sum(), len(m), chance))
+        by_lab = m.groupby("sentence_aspect").agg(n=("is_correct", "size"), recall=("is_correct", "mean"),
+                                                  none_rate=("chosen_label", lambda s: (s == "none").mean()))
+        print("\n  Per aspect label (recall = share of its sentences judges stamped with it):")
+        print(by_lab.sort_values("recall").to_string(float_format=lambda x: f"{x:.2f}"))
+        both = m.merge(intr[["session_id", "question", "is_correct"]].rename(columns={"is_correct": "intruder_found"}),
+                       on=["session_id", "question"])
+        acc_by = both.groupby("intruder_found").is_correct.mean()
+        print("\n  Matching accuracy when the judge found / missed the intruder: "
+              + ", ".join(f"{'found' if k else 'missed'} {v:.2f}" for k, v in acc_by.items()))
+        cats = sorted(m.chosen_label.unique())
+        counts_m = m.pivot_table(index=["question", "option"], columns="chosen_label", values="session_id",
+                                 aggfunc="count").reindex(columns=cats, fill_value=0).fillna(0)
+        print(f"  Fleiss' kappa (agreement on each sentence's label): {fleiss_kappa(counts_m.values):.3f}\n")
 
     # ---------- Part 2: personalization ----------
     print("PART 2  Summary personalization (PREFER vs generic)")

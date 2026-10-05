@@ -169,6 +169,91 @@ input[type=text]:focus-visible { outline: 3px solid var(--gold); outline-offset:
 .check input { width: 20px; height: 20px; margin-top: 4px; accent-color: var(--select); }
 .code { font-family: var(--display); font-size: 2rem; color: var(--curtain); letter-spacing: .06em; margin: 6px 0 16px; }
 
+/* Bonus round */
+.badge {
+  display: inline-block; font-family: var(--display); color: var(--ink); background: var(--gold);
+  padding: 3px 14px 2px; border-radius: 3px; font-size: .95rem; letter-spacing: .03em; margin-bottom: 10px;
+  transform: rotate(-2deg); box-shadow: 2px 2px 0 var(--curtain-deep);
+}
+.pile {
+  border: 2px dashed #c9b088; border-radius: 8px; padding: 12px; min-height: 64px;
+  display: grid; gap: 10px; background: rgba(255,250,240,.6); transition: background .2s, border-color .2s;
+}
+.pile-label { font-size: .85rem; color: var(--sepia); margin: 0 0 6px; letter-spacing: .02em; }
+.pile.over { background: #fff3d6; border-color: var(--gold); }
+.pile .empty { margin: 6px 4px; color: var(--sepia); font-style: italic; text-align: center; }
+.ticket {
+  font: italic 1rem/1.45 var(--body); color: var(--ink); text-align: left; width: 100%;
+  display: flex; gap: 10px; align-items: flex-start; padding: 11px 14px 11px 12px; cursor: grab;
+  background: #fffdf7; border: 1.5px solid #d8c39a; border-radius: 6px;
+  box-shadow: 0 2px 0 #e7d5b0; user-select: none; -webkit-user-select: none; touch-action: none;
+  transition: transform .15s, box-shadow .15s, opacity .15s;
+}
+.ticket::before {
+  content: ""; flex: 0 0 8px; align-self: stretch; margin: 2px 0;
+  background: radial-gradient(circle, #b59a6e 1.4px, transparent 1.8px) 0 0 / 8px 6px;
+}
+.ticket:hover { transform: translateY(-2px); box-shadow: 0 4px 0 #e7d5b0; }
+.ticket:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.ticket.lifted { transform: translateY(-3px) rotate(-1deg); border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232,182,76,.5), 0 8px 18px rgba(43,27,20,.18); }
+.ticket.placeholder { opacity: .25; }
+.ticket.ghost {
+  position: fixed; z-index: 60; pointer-events: none; margin: 0; cursor: grabbing;
+  transform: rotate(-3deg) scale(1.03); box-shadow: 0 16px 30px rgba(43,27,20,.35); transition: none;
+}
+.bin .ticket { font-size: .85rem; padding: 7px 10px 7px 8px; }
+.bin .ticket:not(.lifted) .t { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.bins { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; align-items: start; }
+.bin, .ticket, .bin-label { -webkit-tap-highlight-color: transparent; }
+.bin { --c: #7a6a5a; display: flex; flex-direction: column; cursor: pointer; transition: transform .18s; }
+.bin::before {
+  content: ""; display: block; height: 20px; margin: 0 6px -4px;
+  background:
+    radial-gradient(circle at 8% 80%, #fff6dc 7px, transparent 8px),
+    radial-gradient(circle at 22% 45%, #ffe7a6 8px, transparent 9px),
+    radial-gradient(circle at 38% 70%, #fff6dc 8px, transparent 9px),
+    radial-gradient(circle at 54% 35%, #ffefc4 8px, transparent 9px),
+    radial-gradient(circle at 70% 72%, #fff6dc 8px, transparent 9px),
+    radial-gradient(circle at 86% 45%, #ffe7a6 7px, transparent 8px),
+    radial-gradient(circle at 96% 80%, #fff6dc 6px, transparent 7px);
+  filter: drop-shadow(0 1px 0 #d9b86a);
+}
+.bin.none::before { visibility: hidden; }
+.bin-label {
+  font-family: var(--display); font-size: 1rem; line-height: 1.15; color: #fff; background: var(--c);
+  border: 0; border-radius: 6px 6px 0 0; padding: 9px 8px; cursor: pointer; position: relative; z-index: 1;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.18);
+}
+.bin-label:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.bin-body {
+  min-height: 140px; padding: 10px 10px 18px; display: grid; gap: 8px; align-content: start;
+  background-color: #fffaf0;
+  background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--c) 24%, #fffaf0) 0 16px, #fffaf0 16px 32px);
+  clip-path: polygon(0 0, 100% 0, 93% 100%, 7% 100%); border-radius: 0 0 14px 14px;
+}
+.bin.none .bin-body { background-image: none; background-color: #efe6d4; }
+.bin.over, .bins.armed .bin:hover { transform: translateY(-5px) scale(1.02); }
+.bin.over .bin-label { box-shadow: inset 0 -3px 0 rgba(0,0,0,.18), 0 0 0 3px var(--gold); }
+.bins.armed .bin-label { animation: beckon 1.1s ease-in-out infinite; }
+@keyframes beckon { 50% { box-shadow: inset 0 -3px 0 rgba(0,0,0,.18), 0 0 0 3px rgba(232,182,76,.7); } }
+.bin.got { animation: bop .38s ease-out; }
+@keyframes bop { 40% { transform: translateY(-6px) scale(1.04); } 100% { transform: none; } }
+.hint { font-size: .85rem; color: var(--sepia); margin: 8px 0 0; }
+@media (max-width: 760px) { .bins { grid-template-columns: 1fr 1fr; } .bins .bin.none { grid-column: 1 / -1; } .bins .bin.none .bin-body { min-height: 90px; } }
+@media (prefers-reduced-motion: reduce) { .bin.got, .bins.armed .bin-label { animation: none; } }
+.tally { display: flex; align-items: center; gap: 6px; margin: 20px 0 0; color: var(--sepia); font-size: .95rem; }
+.tally i { width: 16px; height: 10px; border-radius: 2px; border: 1.5px solid var(--sepia); display: inline-block; }
+.tally i.on { background: var(--curtain); border-color: var(--curtain); }
+/* Same-page flow: lock in, then sort */
+.options.locked .opt { cursor: default; }
+.options.locked .opt input:not(:checked) + .face { opacity: .55; }
+.locked-tag { display: inline-flex; align-items: center; gap: 8px; color: var(--select); font-weight: 600; margin: 0; }
+.locked-tag::before { content: ""; width: 18px; height: 18px; border-radius: 50%; background: var(--select)
+  url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / 14px no-repeat; }
+.sorter { margin-top: 30px; padding-top: 26px; border-top: 2px dashed #d8c39a; }
+.sorter h3 { font-size: 1.3rem; margin: 2px 0 6px; }
+@media (prefers-reduced-motion: no-preference) { .sorter.reveal { animation: unfold .45s ease-out both; } }
+@keyframes unfold { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .enter { animation: rise .35s ease-out both; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .enter { animation: none; } * { transition: none !important; } }
@@ -190,11 +275,34 @@ input[type=text]:focus-visible { outline: 3px solid var(--gold); outline-offset:
 <script>
 /* ============ CONFIG: paste your Apps Script web-app URL here ============ */
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbxfgiUzUJW3yVZ5FU5nwIJSqX-AqOBOgK-EpD3DrPh2bjgiyOrBjS3ocGEHjRK95bIl/exec";
-const STUDY_VERSION = "movies-v3";
+const STUDY_VERSION = "movies-v6";
 const SHUFFLE_QUESTION_ORDER = true;   // randomize question order within each part
 // Which questions to show (question numbers from the answer-key CSVs). Must match Code.gs.
 const PART1_QUESTIONS = [4, 5, 7, 9,10];
 const PART2_QUESTIONS = [1, 7, 6, 10, 8];
+
+// Part 1 ticket sorting (shown on the same page, after the odd-one-out answer is locked in).
+// LABEL_NAMES is what judges see on the buckets; edit freely (e.g. your Qwen-generated names).
+const LABEL_NAMES = {
+  story_plot: "Story & plot", general_movie_opinion: "General verdict on the movie",
+  filmmaking_direction: "Filmmaking & writing", acting_performances: "Acting & cast",
+  music_sound: "Music & sound", humor: "Humor & comedy", ending: "The ending",
+  expectations_disappointment: "Expectations vs. reality", history_realism: "History & realism",
+  fandom_franchise: "Fans & franchises", rewatchability: "Watching it again",
+  tv_episodes_seasons: "TV episodes & seasons", overall_praise: "General praise",
+  family_kids: "Family & kids", horror_scares: "Scares & horror", disc_format_quality: "Disc & picture quality"
+};
+// The two buckets per question: the topic most sentences share, and the odd one's topic
+// (a third "None of these" bucket is always added). Bucket order is shuffled for each judge.
+// Which sentence belongs in which bucket is NOT here; that stays in Code.gs.
+const MATCH_LABELS = {
+  4:  ["music_sound", "humor"],
+  5:  ["ending", "general_movie_opinion"],
+  7:  ["history_realism", "acting_performances"],
+  9:  ["tv_episodes_seasons", "overall_praise"],
+  10: ["family_kids", "story_plot"]
+};
+const MATCH_NONE = "none";
 /* ======================================================================== */
 
 const ITEMS = {"intrusion": [{"q": 1, "options": ["Very believable story about small town people, some wanting money so badly they are willing to sell their souls to get it.", "A story like few others, of those love stories that catch you from start to finish, since they've known each other there is magic.", "This is a good story on the need to grow up both from the", "But this is a slow, slow, slow, slow, slow, slow, slow, sort of burn."]}, {"q": 2, "options": ["Loved how the story was told from the other side.", "Today’s talentless writers are incapable of content that they need to include pornography", "If they were spending $110 million on a movie you think they would have gotten a good writer.", "These videos do not have scenes the hint that sex just happened, drug use, swearing etc."]}, {"q": 3, "options": ["Such amazing actors​, stories, and writers.", "Christina Ricci is great in this series.", "After I wore out \"Smoke on the Water\", \"Lazy\" became my favorite song on Machine Head.", "The actors are amazing and a credit to their craft."]}, {"q": 4, "options": ["Music has been changed, music has been added where it didn't exist, and some scenes (which were very funny!)", "This is the only musical that I have ever liked.", "there is nothing 'funny' about heroin addiction.", "Fantastic music and view inside this era!"]}, {"q": 5, "options": ["I watched this movie last night and it was fair with good ending.", "Its got a build up ending that is predictable but amazing and never gets old.", "I live in Baltimore and I thought this movie was bad.", "Ended very abruptly and somewhat depressing"]}, {"q": 6, "options": ["One day a stumbled across it at a movie shop in the mall.", "All in all this movie was very hard to watch and a very large waste of time.", "The movie was great, though didn't follow all of the details of the book.", "I only wish the first quarter was a bit brighter."]}, {"q": 7, "options": ["Mr. Pacino is very convincing as an aging rock star, and the rest of the cast is superb.", "They both exemplify the time in England after WWI with their interactions, speech and costumes.", "A wonderful exposition of the diversity found within the Church of Jesus Christ of Latter Day Saints.", "Most interesting history of a peer of the realm."]}, {"q": 8, "options": ["Frozen is a movie my daughter will watch over and over again while singing along with it.", "This should be a required watch for everyone.", "One of Disney's Best and Most Underrated movies at the same time is Hercules.", "Broken Saints is really a piece of work to behold."]}, {"q": 9, "options": ["At the time this aired on network TV (filled with commercials) I was unaware that there was a 5th season.", "Powerful message, very emotional, I love it!", "I will be buying season two when it is released", "I am hoping there will be a season 2 coming in the future."]}, {"q": 10, "options": ["My 4 year old loves all these shows from Little Hard Hats company.", "Hands down an amazing Family Movie for all ages.", "Absolutely recommend this one for kiddos!!", "A lovely re-telling of the Dracula story in different language."]}], "personalization": [{"q": 1, "scenario": "You are choosing a movie for a family night with your 7-year-old. You want something the child will enjoy and that is appropriate for their age. You are considering “Legend of the Guardians-Owls of Ga'hoole (Two-Disc Blu-ray 3D / Blu-ray Combo) [3D Blu-ray]”.", "A": "The movie was engaging enough that the children preferred watching it again over watching Avatar. The reviewer, who had received the film as a Christmas gift, also enjoyed it and praised its engrossing characters, lovely soundtrack, dazzling animation, and strong voice acting. Although the story was not considered especially original, it was seen as staying faithful to the world of Guardians of Ga’Hoole. The experience also sparked further interest in the franchise, leading the reviewer to purchase both a prequel and the first book in Kathryn Lasky’s series.", "B": "Several reviewers found the movie enjoyable for children, including one who watched it with a 7½-year-old who loved it. The film was also praised for its visuals, 3D presentation, and family-friendly appeal, making it a strong option for watching with kids."}, {"q": 2, "scenario": "After a stressful week you want something that will genuinely make you laugh. You are considering “Identity Thief”.", "A": "Note: May contain spoilers. We rate this ZZZZZ movie a joke on those that buy it! They were great together, very funny and great slap stick. i waited for this to come out so i can rent this because I'm a big fan of both these people but i got say I'm not sure what people were watching. I have received all the movie in wonderful condition and it came a few days after ordering, very pleased with my purchase :) it is an amazing movie, so funny, absolutely love it", "B": "I laughed the entire time. From the start to the last minute it is just funny, light and simple and just different. The recipient found it very funny. Fun when you need a laugh. It's a must see for comedy fans."}, {"q": 3, "scenario": "You are a horror fan looking for something that is actually scary and creepy, not just silly. You are considering “The Uninvited (The Criterion Collection) [DVD]”.", "A": "I enjoyed the extras- a small essay and several \"extras\" were included. It's in black and white, but that was part of its' charm. A brother and sister stumble upon an old deserted manor and it is love at first sight. It was great but I would have like to see special features including the stars interviews and movie interpretations. My girls and I love to watch this at night with all the lights out, except those from the tv.", "B": "Looking back I see now that while those episodes about ghosts borrowed from this movie, THE UNINVITED borrowed heavily from Hitchcock's REBECCA with its old house, sinister portrait and devoted matron plot elements. HIghly recommended for fans of both melodrama and gothic horror. Creepy good fun that even people who usually don't like this genre will enjoy. The spooks without the gore. Probably one of the best ghost stories of the scary variety (unlike the wonderful \"The Ghost and Mrs. Muir\" ever made."}, {"q": 4, "scenario": "You mostly watch films for strong performances. You only want to spend an evening on this if the cast is convincing. You are considering “The Poseidon Adventure”.", "A": "Titanic wishes it had all that! It is in the Tao of life, conservative (the old priest waiting for help) and progressive (Hackman pointing to the exit, life is up there, keep moving), up and down (inside the ship), police and call girl, boy and girl,and life and death. You also get to see Leslie Neilson in a straight role as the ship's captain, infuriated by the reckless cost cutting of the owners... My family has made a ritual of watching this every New Years Eve (for the last ten at least). Great movie, pleased with purchase and fast shipping.", "B": "Casting and characterisation is generally good (with just some corn at times, hell this was the 1970s...). Great cast (combining the talents of 15 Academy Award winners) including the BRILLIANT Shelley Winters who gives a heart wrenching performance as a plump jewish grandmother trying to survive to see her grandson. And Stella Stevens's mature figure was far too appealing to be wasted on the likes of Borgnine. Carol Lynley is also terrific to look at, especially when she lip-synchs the theme song. (The Earnest Borgnine and Shelley Winters characters are pretty awesome and make you understand why both had such successful careers.)"}, {"q": 5, "scenario": "What matters most to you is a gripping, well-constructed story. You are considering “Valerian and the City of a Thousand Planets”.", "A": "Very cool, nice plot. However, the love story does not hold up as well. Could have been great but short sighted story with human behavior characterized by power hungry, genocidal, and the sexual harassment of women. Loved the effects and the imagination of the story. interesting and original premise, but bad acting and cliché love story.", "B": "I had looked forward to this, because I love sci-fi and wanted a 5th Element type journey, but this was sorely lacking. Phenomenal effects with cheesy dialogue. Fun on our big screen tv. I was generous and gave it two stars, just for the special effects. The storyline was great."}, {"q": 6, "scenario": "For you a film's music makes or breaks it; you are hoping for a memorable soundtrack or songs. You are considering “Baby Genius Favorite Nursery Rhymes w/bonus Music CD”.", "A": "The reviewer originally expected something similar to a Baby Einstein video, but found that this DVD combines live-action footage with cartoon characters and includes several familiar nursery songs such as “London Bridge” and “She’ll Be Coming ’Round the Mountain.” The child enjoyed the program enough to watch most of it and would even start clapping as soon as the DVD began. Because it consistently brought such a positive reaction, the family began saving it for occasions when they especially wanted to cheer the child up, such as sick days or long car rides. The reviewer was also satisfied with the product overall and felt it arrived as described.", "B": "The reviewer describes the music as fun and engaging enough to encourage both children and adults to sing and dance along. The included CD contains 25 songs, giving it a substantial amount of musical content. Although the reviewer felt the singers were only average rather than outstanding, the child clearly enjoyed the music and was actively rocking along to it. The songs also proved catchy enough that the reviewer found themselves continuing to sing them around the house afterward, suggesting that the music was memorable and easy to enjoy repeatedly."}, {"q": 7, "scenario": "You hate investing two hours in a film only to be let down by the ending. You are considering “Predestination [Blu-ray]”.", "A": "The reviewer found the ending satisfying and especially memorable, even though they felt it might be possible to predict some of what happens before the reveal. They describe the ending as mind-blowing, but also note that the film still leaves a lingering sense of mystery afterward. Although they understood the main events by the end, they felt there were deeper layers and unanswered questions that made the story feel more complex and thought-provoking. The reviewer also emphasizes that the opening scene is important because it sets up key elements that become relevant later, particularly to the ending. While the movie can be difficult to follow at first, they ultimately felt that the pieces came together by the end.", "B": "The reviewer initially found the movie interesting, but felt that the plot became increasingly complicated and convoluted as it progressed. Their comparison to a lizard biting its own tail suggests that they saw the story as becoming overly circular or self-referential rather than genuinely interesting. At the same time, they acknowledge that the movie contains surprise and suspense and avoid giving further details because doing so would spoil important parts of the story. They also mention that the film was made in Australia and comment positively on the Blu-ray’s value for the price, although these points are separate from their mixed reaction to the movie’s plot."}, {"q": 8, "scenario": "You want something historically accurate and informative, not a loose dramatisation. You are considering “Wolf Hall”.", "A": "The reviewer found *Wolf Hall* to be a fascinating and informative portrayal of the period surrounding Henry VIII, offering an interesting perspective on the politics and history of the time. They note that viewers who are not already familiar with British history from this era may find the story somewhat confusing at first, but overall they felt the series provided meaningful historical context and worked well as a serious historical account.", "B": "The reviewer had mixed feelings about the tone, finding the series dark and dreary and comparing it unfavorably with *The Tudors*. However, they strongly praised the acting, period settings, and costumes, saying these elements convincingly transport the viewer back to early-1500s England. They also found the production entertaining and admired the overall quality associated with PBS Masterpiece, though the review says little about the historical accuracy of the story itself."}, {"q": 9, "scenario": "You are buying the disc edition of “Titus - Seasons 1 & 2 [DVD]” for your collection. You care about picture and sound quality and whether the disc plays properly.", "A": "All it takes is a corprate brat or one critic to whine about it.....and BAM!, your canceled. Based on Chris Titus' own life (dear heavens, you wonder how the boy survived), it's howling funny in places, tender in others, slightly risque in still others - a wonderful mix. Showed on time and in condition described. Thanks Christopher Titus and crew for a great series. In one of the flashbacks, when Titus falls in the bonfire... That alone is worth the price of this set...", "B": "It doesn't have the \"CC\" on the box, but the small print does state so. So of course when it came out on DVD I had to get them all. The Titus Seasons 1 & 2 DVD box sets arrived on time and was in excellent condition. I have looked for this dvd set for a couple years excellent I have the complete series now thank you I had got this DVD for my boyfriend as a gift and I personally had never seen this show."}, {"q": 10, "scenario": "You are looking for a new series to binge over the next few weeks and want to know whether it stays good across episodes and seasons. You are considering “Empire Season 1”.", "A": "The reviewer was immediately struck by the premiere, comparing the show’s tone and style to *Hustle & Flow* and becoming especially interested in the central characters. Their enthusiasm appears to have continued beyond the first episode, as they were eager to purchase and watch Season 2. Another viewer had already seen some episodes on television but had not yet watched the entire season. Overall, the comments suggest that the series was engaging enough to keep viewers interested and wanting to continue into the next season.", "B": "The reviewer found the series highly entertaining, relatable, and emotionally engaging, calling it an outstanding drama. They especially praised Taraji P. Henson and Terrence Howard, describing them as a powerful and dynamic pairing whose performances strongly contribute to the show’s appeal. The series was enjoyable enough to make for a memorable family viewing experience."}]};
@@ -219,7 +327,8 @@ function freshState(pid) {
   return {
     version: STUDY_VERSION, participant_id: pid, session_id: newId(),
     started_at: new Date().toISOString(), phase: "intro1", idx: 0,
-    plan1: order1.map(i => ({ item: i, display: shuffle([0, 1, 2, 3]) })),
+    plan1: order1.map(i => ({ item: i, display: shuffle(ITEMS.intrusion[i].options.map((_, k) => k)),
+      labels: shuffle((MATCH_LABELS[ITEMS.intrusion[i].q] || []).slice()) })),
     plan2: order2.map(i => ({ item: i, left: rand(2) ? "A" : "B" })),
     intrusion: [], personalization: [], submitted: false
   };
@@ -289,8 +398,8 @@ function screenWelcome() {
   const agree = h("input", { type: "checkbox", id: "agree" });
   wrap.append(h("section", { class: "screen prose" },
     h("h2", {}, "Welcome, and thank you for helping"),
-    h("p", {}, "This study has two parts, each with 5 questions, and takes about 8 minutes. Everything you read comes from real Amazon customer reviews of movies and TV shows."),
-    h("p", {}, "In Part 1 you will spot the sentence that talks about something different than the others. In Part 2 you will choose which of two review summaries helps you more with a decision, and rate each one."),
+    h("p", {}, "This study has two parts, each with 5 questions, and takes about 12 minutes. Everything you read comes from real Amazon customer reviews of movies and TV shows."),
+    h("p", {}, "In Part 1 you will spot the sentence that talks about something different than the others, then sort the sentences by topic. In Part 2 you will choose which of two review summaries helps you more with a decision, and rate each one."),
     h("p", {}, "Every question needs an answer before you can move on, and answers can't be changed once you continue, so take your time. Please do not use LLMs or other AI tools while completing this study, as we are evaluating LLM-generated summaries using human judgments. There are no right or wrong answers in the sense of a test: we want your honest first impression. We don't collect your email and record your name only to keep track of who has taken part in this study."),
     h("div", { class: "field" }, h("label", { for: "pid" }, "Your Full Name"), pid),
     h("div", { class: "field check" }, agree, h("label", { for: "agree", style: "font-weight:400" }, "I am 18 or older and agree to take part.")),
@@ -310,30 +419,166 @@ function screenIntro1() {
     h("h2", {}, "Which sentence does not belong?"),
     h("p", {}, "Each question shows four sentences from reviews. Three talk about the same kind of thing, such as the acting or the DVD quality. One talks about something different. Pick that one."),
     h("p", {}, "Ignore whether a sentence is positive or negative; focus on what it is about. Go with your first impression."),
+    h("p", {}, "Once you lock in your answer, the same page asks you to sort the four sentences into topic buckets."),
     h("div", { class: "actions" }, h("button", { class: "go", onclick: () => { S.phase = "q1"; S.idx = 0; save(); route(); } }, "Start Part 1"))));
+}
+
+const TICKET_COLORS = ["#2f7f86", "#c8553d", "#6b3e75", "#8a6d1f"];
+const NONE_COLOR = "#7a6a5a";
+
+// Drag-and-drop ticket sorter. Returns { el, result() } where result() is null until every ticket is placed.
+function buildSorter(item, display, labels, onChange) {
+  const bins = [...labels, MATCH_NONE];
+  const colorOf = k => k === MATCH_NONE ? NONE_COLOR : TICKET_COLORS[labels.indexOf(k) % TICKET_COLORS.length];
+  const nameOf = k => k === MATCH_NONE ? "None of these" : (LABEL_NAMES[k] || k.replace(/_/g, " "));
+  const assign = {};
+  let lifted = null, moves = 0, scrollV = 0, scrolling = false;
+  const tally = h("p", { class: "tally", "aria-live": "polite" });
+  const pileList = h("div", { class: "pile", "data-bin": "" });
+  const binEls = {};
+  const binsWrap = h("div", { class: "bins" }, bins.map(k => {
+    const body = h("div", { class: "bin-body" });
+    const el = h("div", { class: "bin" + (k === MATCH_NONE ? " none" : ""), "data-bin": k, style: `--c:${colorOf(k)}` },
+      h("button", { class: "bin-label", type: "button", "aria-label": `Put the selected ticket in ${nameOf(k)}` }, nameOf(k)), body);
+    el.addEventListener("click", e => { if (lifted !== null && !e.target.closest(".ticket")) place(lifted, k); });
+    binEls[k] = { el, body };
+    return el;
+  }));
+  pileList.addEventListener("click", e => { if (lifted !== null && !e.target.closest(".ticket") && lifted in assign) place(lifted, ""); });
+  const root = h("div", {},
+    h("p", { class: "pile-label" }, "TICKET PILE"), pileList, binsWrap,
+    h("p", { class: "hint" }, "Prefer tapping? Tap a ticket, then tap a bucket. You can move tickets around until you continue."),
+    tally);
+
+  function place(orig, k) {
+    if (k) assign[orig] = k; else delete assign[orig];
+    moves++; lifted = null; render();
+    if (k) { const b = binEls[k].el; b.classList.remove("got"); void b.offsetWidth; b.classList.add("got"); }
+    onChange && onChange();
+  }
+  function setLifted(orig) { lifted = orig; render(); }
+  function ticket(orig) {
+    const el = h("button", { class: "ticket" + (lifted === orig ? " lifted" : ""), type: "button",
+      "aria-pressed": lifted === orig ? "true" : "false" }, h("span", { class: "t" }, item.options[orig]));
+    el.addEventListener("click", e => { if (e.detail === 0) setLifted(lifted === orig ? null : orig); });  // keyboard
+    el.addEventListener("pointerdown", e => startDrag(e, orig, el));
+    return el;
+  }
+  function dropTarget(x, y) {
+    const t = document.elementFromPoint(x, y);
+    const z = t && t.closest(".bin, .pile");
+    return z && root.contains(z) ? z : null;
+  }
+  function autoscroll() { if (!scrolling) return; if (scrollV) window.scrollBy(0, scrollV); requestAnimationFrame(autoscroll); }
+  function startDrag(e, orig, el) {
+    if (e.button > 0) return;
+    const sx = e.clientX, sy = e.clientY;
+    let ghost = null, over = null, ox = 0, oy = 0;
+    el.setPointerCapture(e.pointerId);
+    const move = ev => {
+      if (!ghost) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+        const r = el.getBoundingClientRect();
+        ox = sx - r.left; oy = sy - r.top;
+        ghost = el.cloneNode(true); ghost.classList.remove("lifted"); ghost.classList.add("ghost");
+        ghost.style.width = r.width + "px";
+        document.body.append(ghost); el.classList.add("placeholder");
+        lifted = null; scrolling = true; requestAnimationFrame(autoscroll);
+      }
+      ev.preventDefault();
+      ghost.style.left = (ev.clientX - ox) + "px"; ghost.style.top = (ev.clientY - oy) + "px";
+      const t = dropTarget(ev.clientX, ev.clientY);
+      if (t !== over) { over && over.classList.remove("over"); over = t; over && over.classList.add("over"); }
+      scrollV = ev.clientY < 80 ? -10 : ev.clientY > innerHeight - 80 ? 10 : 0;
+    };
+    const up = ev => {
+      el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up);
+      scrolling = false; scrollV = 0;
+      if (ghost) {
+        ghost.remove(); el.classList.remove("placeholder"); over && over.classList.remove("over");
+        if (over) place(orig, over.dataset.bin);
+      } else if (ev.type === "pointerup") {
+        const zone = el.closest(".bin, .pile");
+        if (lifted !== null && lifted !== orig && zone && (zone.dataset.bin || lifted in assign)) place(lifted, zone.dataset.bin);
+        else setLifted(lifted === orig ? null : orig);
+      }
+    };
+    el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+  }
+  function render() {
+    const inPile = display.filter(o => !(o in assign));
+    pileList.replaceChildren(...(inPile.length ? inPile.map(ticket) : [h("p", { class: "empty" }, "All sorted. Nice work!")]));
+    for (const k of bins) binEls[k].body.replaceChildren(...display.filter(o => assign[o] === k).map(ticket));
+    binsWrap.classList.toggle("armed", lifted !== null);
+    const n = display.length - inPile.length;
+    tally.replaceChildren(...display.map((_, i) => h("i", { class: i < n ? "on" : "", "aria-hidden": "true" })),
+      ` ${n} of ${display.length} sorted`);
+    if (lifted !== null) { const t = root.querySelector(".ticket.lifted"); t && t.focus({ preventScroll: true }); }
+  }
+  render();
+  return {
+    el: root, pile: pileList,
+    left: () => display.filter(o => !(o in assign)).length,
+    result: () => ({ match: display.map(o => ({ option: o + 1, label: assign[o] })), moves })
+  };
 }
 
 function screenQ1() {
   const step = S.plan1[S.idx], item = ITEMS.intrusion[step.item];
-  const t0 = performance.now(), name = "q1_" + S.idx;
+  const labels = step.labels || [], hasSort = labels.length > 0;
+  const t0 = performance.now(), name = "q1_" + S.idx, last = S.idx === N1 - 1;
+  let choice = null, rt = null, tLock = null, sorter = null;
   const msg = h("p", { class: "msg", role: "alert" });
+  const msg2 = h("p", { class: "msg", role: "alert" });
   const fs = h("fieldset", { class: "options" },
     h("legend", { class: "sr" }, "Choose the sentence that is about something different"),
     step.display.map(orig => radio(name, String(orig + 1), item.options[orig])));
-  const last = S.idx === N1 - 1;
-  const node = h("section", { class: "screen" },
+  const nextLabel = last ? "Finish Part 1" : "Next question";
+
+  function finish() {
+    const entry = { q: item.q, position: S.idx + 1, display_order: step.display.map(i => i + 1), choice, rt_ms: rt };
+    if (sorter) {
+      const r = sorter.result();
+      Object.assign(entry, { match: r.match, labels_shown: labels.slice(), match_moves: r.moves,
+        match_rt_ms: Math.round(performance.now() - tLock) });
+    }
+    S.intrusion.push(entry);
+    if (last) S.phase = "intro2"; else S.idx++;
+    save(); route();
+  }
+
+  const sortArea = h("div", { class: "sorter", hidden: true });
+  const lockRow = h("div", { class: "actions" },
+    h("button", { class: "go", onclick: () => {
+      const v = picked(fs, name);
+      if (!v) { msg.textContent = "Choose a sentence to continue."; fs.querySelector("input").focus(); return; }
+      choice = Number(v); rt = Math.round(performance.now() - t0);
+      if (!hasSort) return finish();
+      // Lock part A so the bucket names can't influence the odd-one-out answer.
+      fs.disabled = true; fs.classList.add("locked");
+      lockRow.replaceChildren(h("p", { class: "locked-tag" }, "Answer locked in"));
+      tLock = performance.now();
+      sorter = buildSorter(item, step.display, labels, () => { msg2.textContent = ""; });
+      sortArea.replaceChildren(
+        h("span", { class: "badge" }, "Part B"),
+        h("h3", {}, "Now sort the tickets"),
+        h("p", { class: "lede" }, "Drag each sentence into the bucket for the topic it talks about. If neither topic fits, drop it in “None of these”."),
+        sorter.el,
+        h("div", { class: "actions" },
+          h("button", { class: "go", onclick: () => {
+            const left = sorter.left();
+            if (left) { msg2.textContent = `Sort every ticket to continue (${left} left).`; sorter.pile.scrollIntoView({ block: "center", behavior: "smooth" }); return; }
+            finish();
+          } }, nextLabel), msg2));
+      sortArea.hidden = false; sortArea.classList.add("reveal");
+      sortArea.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    } }, hasSort ? "Lock in my answer" : nextLabel), msg);
+
+  const node = h("section", { class: "screen wide" },
     h("p", { class: "where" }, `Part 1, question ${S.idx + 1} of ${N1}`),
     h("h2", {}, "Which sentence is about something different?"),
     h("p", { class: "lede" }, "Three sentences share a topic. Pick the odd one out."),
-    fs, h("div", { class: "actions" },
-      h("button", { class: "go", onclick: () => {
-        const v = picked(fs, name);
-        if (!v) { msg.textContent = "Choose a sentence to continue."; fs.querySelector("input").focus(); return; }
-        S.intrusion.push({ q: item.q, position: S.idx + 1, display_order: step.display.map(i => i + 1),
-          choice: Number(v), rt_ms: Math.round(performance.now() - t0) });
-        if (last) S.phase = "intro2"; else S.idx++;
-        save(); route();
-      } }, last ? "Finish Part 1" : "Next question"), msg));
+    fs, lockRow, sortArea);
   show(node);
 }
 
