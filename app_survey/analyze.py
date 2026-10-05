@@ -64,7 +64,7 @@ def main():
     print(f"  median duration: {keep.duration_s.median() / 60:.1f} min\n")
 
     # ---------- Part 1: aspect validity (cluster intrusion) ----------
-    n_opts = 4
+    n_opts = int(intr.display_order.astype(str).str.split().str.len().max())
     print("PART 1  Aspect validity (word/sentence intrusion)")
     print("  Overall accuracy:", binom(intr.is_correct.sum(), len(intr), 1 / n_opts))
     by_q = intr.groupby(["question", "target_aspect", "intruder_aspect"]).is_correct.agg(["sum", "count"])
