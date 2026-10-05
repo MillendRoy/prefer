@@ -7,7 +7,6 @@ scripts/output/
 notebooks/figures_paper/
 notebooks/pca_5d.pdf
 notebooks/pca_5d_reviews.pdf
-EOF
 
 # Outputs
 outputs/
@@ -22,20 +21,10 @@ __pycache__/
 .venv/
 *.egg-info/
 
-# Editor
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-EOF__pycache__/
-*.pyc
-.ipynb_checkpoints/
-
-
 # Editor / OS
 .vscode/
 .idea/
 .DS_Store
-EOFapp_survey/Code.gs
+
+# Survey backend (contains answer keys)
 app_survey/Code.gs
