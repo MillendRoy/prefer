@@ -271,26 +271,27 @@ function screenWelcome() {
   if (saved && !saved.submitted && saved.phase !== "welcome") {
     wrap.append(h("section", { class: "screen" },
       h("h2", {}, "Pick up where you left off"),
-      h("p", { class: "lede" }, `You have an unfinished session as participant “${saved.participant_id}”.`),
+      h("p", { class: "lede" }, `${saved.participant_id}, you have an unfinished session.`),
       h("div", { class: "actions" },
         h("button", { class: "go", onclick: () => { S = saved; route(); } }, "Continue my session"),
         h("button", { class: "plain", onclick: () => { clearSaved(); S = null; route(); } }, "Start over"))));
     return show(wrap);
   }
   const msg = h("p", { class: "msg", role: "alert" });
-  const pid = h("input", { type: "text", id: "pid", autocomplete: "off", spellcheck: "false" });
+  // const pid = h("input", { type: "text", id: "pid", autocomplete: "off", spellcheck: "false" });
+  const pid = h("input", { type: "text", id: "pid", autocomplete: "name", spellcheck: "false" });
   const agree = h("input", { type: "checkbox", id: "agree" });
   wrap.append(h("section", { class: "screen prose" },
     h("h2", {}, "Welcome, and thank you for helping"),
     h("p", {}, "This study has two parts, each with 10 questions, and takes about 15 minutes. Everything you read comes from real Amazon customer reviews of movies and TV shows."),
-    h("p", {}, "In Part 1 you will spot the sentence that is about something different. In Part 2 you will choose which of two review summaries helps you more with a decision, and rate each one."),
-    h("p", {}, "Every question needs an answer before you can move on, and answers can't be changed once you continue, so take your time. There are no right or wrong answers in the sense of a test: we want your honest first impression. We don't collect your name or email."),
-    h("div", { class: "field" }, h("label", { for: "pid" }, "Participant ID (as given to you by the researcher)"), pid),
+    h("p", {}, "In Part 1 you will spot the sentence that talks about something different than the others. In Part 2 you will choose which of two review summaries helps you more with a decision, and rate each one."),
+    h("p", {}, "Every question needs an answer before you can move on, and answers can't be changed once you continue, so take your time. There are no right or wrong answers in the sense of a test: we want your honest first impression. We don't collect your email and record your name only to keep track of who has taken part in this study."),
+    h("div", { class: "field" }, h("label", { for: "pid" }, "Your Full Name"), pid),
     h("div", { class: "field check" }, agree, h("label", { for: "agree", style: "font-weight:400" }, "I am 18 or older and agree to take part. I understand my anonymous answers will be used for research.")),
     msg,
     h("div", { class: "actions" }, h("button", { class: "go", onclick: () => {
       const v = pid.value.trim();
-      if (!v) { msg.textContent = "Enter your participant ID to begin."; pid.focus(); return; }
+      if (!v) { msg.textContent = "Enter your full name to begin."; pid.focus(); return; }
       if (!agree.checked) { msg.textContent = "Tick the consent box to begin."; agree.focus(); return; }
       S = freshState(v); save(); route();
     } }, "Begin the study"))));
