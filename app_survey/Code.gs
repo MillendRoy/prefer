@@ -196,8 +196,8 @@ const KEYS = {
 };
 
 // Which questions are live. Must match PART1_QUESTIONS / PART2_QUESTIONS in index.html.
-const PART1_QUESTIONS = [2, 3, 4, 5, 6];
-const PART2_QUESTIONS = [1, 2, 3, 5, 6];
+const PART1_QUESTIONS = [4, 5, 7, 9,10];
+const PART2_QUESTIONS = [1, 7, 6, 10, 8];
 
 const SHEETS = {
   participants: ["received_at", "participant_id", "session_id", "version", "started_at", "finished_at",
