@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reading movie reviews: a short study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --velvet: #2b0a10;
+  --curtain: #8c1c2b;
+  --curtain-deep: #4a0c16;
+  --gold: #e8b64c;
+  --gold-soft: #f3d58f;
+  --ivory: #f7ebd3;
+  --ivory-edge: #e7d5b0;
+  --ink: #2b1b14;
+  --sepia: #7a5c44;
+  --select: #1f4e5a;
+  --error: #9b2226;
+  --display: "Limelight", "Rockwell", "Georgia", serif;
+  --body: "Source Serif 4", "Georgia", "Times New Roman", serif;
+  --curtain-w: clamp(14px, 8vw, 150px);
+}
+* { box-sizing: border-box; }
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body {
+  margin: 0; min-height: 100%;
+  font-family: var(--body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink);
+  background:
+    radial-gradient(ellipse 70% 55% at 50% -10%, rgba(255, 226, 160, .22), transparent 70%),
+    radial-gradient(ellipse 120% 80% at 50% 110%, #1a0509, transparent 60%),
+    var(--velvet);
+  background-attachment: fixed;
+}
+/* Curtains */
+body::before, body::after {
+  content: ""; position: fixed; top: 0; bottom: 0; width: var(--curtain-w); z-index: 0; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.35), transparent 18%, transparent 80%, rgba(0,0,0,.5)),
+    repeating-linear-gradient(90deg, var(--curtain-deep) 0, var(--curtain) 14px, #a82a3b 20px, var(--curtain) 26px, var(--curtain-deep) 40px);
+}
+body::before { left: 0; box-shadow: 8px 0 30px rgba(0,0,0,.6); }
+body::after  { right: 0; box-shadow: -8px 0 30px rgba(0,0,0,.6); }
+/* Film grain */
+.grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .09; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+main {
+  position: relative; z-index: 2;
+  max-width: 1080px; margin: 0 auto;
+  padding: 28px calc(var(--curtain-w) + 16px) 64px;
+}
+
+/* Marquee (the one loud element) */
+.marquee {
+  margin: 12px auto 28px; max-width: 640px; text-align: center;
+  padding: 26px 22px 22px; border-radius: 10px;
+  background: linear-gradient(180deg, #3d0f17, #250810);
+  border: 3px solid var(--gold);
+  box-shadow: 0 0 0 6px #250810, 0 0 0 8px rgba(232,182,76,.45), 0 20px 50px rgba(0,0,0,.55);
+  position: relative;
+}
+.bulbs { display: flex; justify-content: space-between; padding: 0 4px; }
+.bulbs span {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--gold-soft); box-shadow: 0 0 8px 2px rgba(243,213,143,.7);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bulbs span { animation: chase 1.6s ease-in-out 3 both; }
+  .bulbs span:nth-child(3n+2) { animation-delay: .2s; }
+  .bulbs span:nth-child(3n) { animation-delay: .4s; }
+}
+@keyframes chase { 0%,100% { opacity: 1; } 50% { opacity: .25; box-shadow: none; } }
+.marquee h1 {
+  font-family: var(--display); font-weight: 400; color: var(--gold);
+  font-size: clamp(2rem, 6vw, 3.25rem); line-height: 1.05; letter-spacing: .01em;
+  margin: 16px 0 6px; text-shadow: 0 0 18px rgba(232,182,76,.45);
+}
+.marquee p { color: var(--ivory); opacity: .85; margin: 0 0 14px; font-style: italic; }
+
+/* Progress: a film strip, one frame per question */
+.reel { display: flex; gap: 14px; justify-content: center; margin: 0 auto 22px; flex-wrap: wrap; }
+.strip {
+  display: flex; gap: 3px; padding: 7px 6px; background: #120306; border-radius: 3px;
+  background-image:
+    radial-gradient(circle, #3a1a1f 1.6px, transparent 2px),
+    radial-gradient(circle, #3a1a1f 1.6px, transparent 2px);
+  background-size: 8px 7px; background-position: 0 0, 0 100%; background-repeat: repeat-x;
+}
+.frame { width: clamp(10px, 2.4vw, 22px); height: 16px; background: #2e1418; border-radius: 1px; transition: background .3s; }
+.frame.done { background: var(--gold); box-shadow: 0 0 6px rgba(232,182,76,.6); }
+.frame.now { background: #7a5b2a; }
+.reel-label { color: var(--ivory); opacity: .65; font-size: .8rem; text-align: center; margin-top: 4px; }
+
+/* The screen: content panel */
+.screen {
+  background: var(--ivory); border-radius: 4px; padding: clamp(22px, 4vw, 40px);
+  box-shadow: 0 0 60px rgba(255, 226, 160, .18), 0 24px 60px rgba(0,0,0,.5);
+  border: 1px solid var(--ivory-edge);
+  max-width: 760px; margin: 0 auto;
+}
+.screen.wide { max-width: 1040px; }
+.where { color: var(--sepia); font-size: .9rem; margin: 0 0 6px; }
+h2 { font-family: var(--body); font-weight: 600; font-size: clamp(1.35rem, 3vw, 1.7rem); line-height: 1.25; margin: 0 0 8px; }
+h3 { font-size: 1.05rem; margin: 0 0 6px; font-weight: 600; }
+.lede { margin: 0 0 22px; color: #4a3528; }
+.prose p { margin: 0 0 14px; max-width: 68ch; }
+
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+legend { padding: 0; font-weight: 600; margin-bottom: 10px; }
+
+/* Answer options */
+.options { display: grid; gap: 10px; }
+.opt { position: relative; display: block; cursor: pointer; }
+.opt input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.opt .face {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 14px 16px; border-radius: 6px; background: #fffaf0;
+  border: 1.5px solid #d8c39a; transition: border-color .15s, background .15s, color .15s;
+}
+.opt .dot { flex: 0 0 18px; height: 18px; margin-top: 4px; border-radius: 50%; border: 2px solid #a88a5f; }
+.opt:hover .face { border-color: var(--sepia); }
+.opt input:focus-visible + .face { outline: 3px solid var(--gold); outline-offset: 2px; }
+.opt input:checked + .face { background: var(--select); border-color: var(--select); color: var(--ivory); }
+.opt input:checked + .face .dot { border-color: var(--gold); background: radial-gradient(circle, var(--gold) 45%, transparent 50%); }
+
+/* Personalization layout */
+.situation {
+  border-left: 4px solid var(--curtain); padding: 10px 0 10px 16px; margin: 6px 0 22px;
+  font-style: italic; font-size: 1.1rem;
+}
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
+.summary { background: #fffaf0; border: 1.5px solid #d8c39a; border-radius: 6px; padding: 18px 18px 16px; display: flex; flex-direction: column; }
+.summary h3 { font-family: var(--display); font-weight: 400; color: var(--curtain); font-size: 1.35rem; margin-bottom: 8px; }
+.summary .text { flex: 1; margin: 0 0 16px; line-height: 1.65; }
+.rate legend { font-weight: 400; font-size: .95rem; color: #4a3528; margin-bottom: 8px; }
+.scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.scale .opt .face { justify-content: center; padding: 8px 0; font-weight: 600; }
+.scale-ends { display: flex; justify-content: space-between; font-size: .8rem; color: var(--sepia); margin-top: 4px; }
+.choice .options { grid-template-columns: 1fr 1fr; }
+
+/* Buttons and messages */
+.actions { display: flex; align-items: center; gap: 16px; margin-top: 26px; flex-wrap: wrap; }
+button.go {
+  font: 600 1.05rem var(--body); cursor: pointer;
+  padding: 12px 26px; border-radius: 999px; border: 0;
+  background: var(--curtain); color: var(--ivory);
+  box-shadow: 0 4px 0 var(--curtain-deep);
+}
+button.go:hover { background: #a02436; }
+button.go:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--curtain-deep); }
+button.go:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+button.go[disabled] { opacity: .5; cursor: not-allowed; }
+button.plain { font: inherit; background: none; border: 0; color: var(--select); text-decoration: underline; cursor: pointer; padding: 0; }
+.msg { color: var(--error); font-size: .95rem; margin: 0; }
+.field { margin: 18px 0; }
+.field label { display: block; font-weight: 600; margin-bottom: 6px; }
+input[type=text] {
+  font: inherit; width: 100%; max-width: 360px; padding: 10px 12px; border-radius: 6px;
+  border: 1.5px solid #c9b088; background: #fffaf0; color: var(--ink);
+}
+input[type=text]:focus-visible { outline: 3px solid var(--gold); outline-offset: 1px; }
+.check { display: flex; gap: 10px; align-items: flex-start; }
+.check input { width: 20px; height: 20px; margin-top: 4px; accent-color: var(--select); }
+.code { font-family: var(--display); font-size: 2rem; color: var(--curtain); letter-spacing: .06em; margin: 6px 0 16px; }
+
+.enter { animation: rise .35s ease-out both; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .enter { animation: none; } * { transition: none !important; } }
+
+@media (max-width: 760px) {
+  .pair { grid-template-columns: 1fr; }
+  main { padding-top: 16px; }
+}
+@media (max-width: 420px) { .choice .options { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<main>
+  <div id="progress" aria-hidden="true"></div>
+  <div id="stage" aria-live="polite"></div>
+</main>
+
+<script>
+/* ============ CONFIG: paste your Apps Script web-app URL here ============ */
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbxfgiUzUJW3yVZ5FU5nwIJSqX-AqOBOgK-EpD3DrPh2bjgiyOrBjS3ocGEHjRK95bIl/exec";
+const STUDY_VERSION = "movies-v1";
+const SHUFFLE_QUESTION_ORDER = true;   // randomize question order within each part
+/* ======================================================================== */
+
+const ITEMS = {"intrusion": [{"q": 1, "options": ["Very believable story about small town people, some wanting money so badly they are willing to sell their souls to get it.", "A story like few others, of those love stories that catch you from start to finish, since they've known each other there is magic.", "This is a good story on the need to grow up both from the", "But this is a slow, slow, slow, slow, slow, slow, slow, sort of burn."]}, {"q": 2, "options": ["Loved how the story was told from the other side.", "Today’s talentless writers are incapable of content that they need to include pornography", "If they were spending $110 million on a movie you think they would have gotten a good writer.", "These videos do not have scenes the hint that sex just happened, drug use, swearing etc."]}, {"q": 3, "options": ["Such amazing actors​, stories, and writers.", "Christina Ricci is great in this series.", "After I wore out \"Smoke on the Water\", \"Lazy\" became my favorite song on Machine Head.", "The actors are amazing and a credit to their craft."]}, {"q": 4, "options": ["Music has been changed, music has been added where it didn't exist, and some scenes (which were very funny!)", "This is the only musical that I have ever liked.", "there is nothing 'funny' about heroin addiction.", "Fantastic music and view inside this era!"]}, {"q": 5, "options": ["I watched this movie last night and it was fair with good ending.", "Its got a build up ending that is predictable but amazing and never gets old.", "I live in Baltimore and I thought this movie was bad.", "Ended very abruptly and somewhat depressing"]}, {"q": 6, "options": ["One day a stumbled across it at a movie shop in the mall.", "All in all this movie was very hard to watch and a very large waste of time.", "The movie was great, though didn't follow all of the details of the book.", "I only wish the first quarter was a bit brighter."]}, {"q": 7, "options": ["Mr. Pacino is very convincing as an aging rock star, and the rest of the cast is superb.", "They both exemplify the time in England after WWI with their interactions, speech and costumes.", "A wonderful exposition of the diversity found within the Church of Jesus Christ of Latter Day Saints.", "Most interesting history of a peer of the realm."]}, {"q": 8, "options": ["Frozen is a movie my daughter will watch over and over again while singing along with it.", "This should be a required watch for everyone.", "One of Disney's Best and Most Underrated movies at the same time is Hercules.", "Broken Saints is really a piece of work to behold."]}, {"q": 9, "options": ["At the time this aired on network TV (filled with commercials) I was unaware that there was a 5th season.", "Powerful message, very emotional, I love it!", "I will be buying season two when it is released", "I am hoping there will be a season 2 coming in the future."]}, {"q": 10, "options": ["My 4 year old loves all these shows from Little Hard Hats company.", "Hands down an amazing Family Movie for all ages.", "Absolutely recommend this one for kiddos!!", "A lovely re-telling of the Cinderella story."]}], "personalization": [{"q": 1, "scenario": "You are choosing a movie for a family night with your 7-year-old. You want something the child will enjoy and that is appropriate for their age. You are considering “Legend of the Guardians-Owls of Ga'hoole (Two-Disc Blu-ray 3D / Blu-ray Combo) [3D Blu-ray]”.", "A": "I offered to show them Avatar after this and they were more interested in seeing THIS movie again. I just purchased the prequel Guardians of Ga’Hoole book (2013) and the first book (2003) in the series by Kathryn Lasky - can't wait to read them! A friend gave this to me for Christmas last year. The characters are engrossing; the soundtrack is lovely; the animation is dazzling; the voice acting was great; the story isn't overly original, but certainly seemed to stay true to the world that has been created. Even though I did enjoy it.", "B": "The only reason I gave this two stars instead of one is because my kids did enjoy it. I know technically it is a kid's movie, but it is an amazing work of art visually in and of itself featuring a story line that doesn't offend adult concepts of character development and story. :) Just watched this with my 7 1/2 year old son and we thought it was awesome. If you are looking for a good 3D movie for the kids this is your movie. I am pleased to have my grand children come watch the movies with me."}, {"q": 2, "scenario": "After a stressful week you want something that will genuinely make you laugh. You are considering “Identity Thief”.", "A": "Note: May contain spoilers. We rate this ZZZZZ movie a joke on those that buy it! They were great together, very funny and great slap stick. i waited for this to come out so i can rent this because I'm a big fan of both these people but i got say I'm not sure what people were watching. I have received all the movie in wonderful condition and it came a few days after ordering, very pleased with my purchase :) it is an amazing movie, so funny, absolutely love it", "B": "I laughed the entire time. From the start to the last minute it is just funny, light and simple and just different. The recipient found it very funny. Fun when you need a laugh. It's a must see for comedy fans."}, {"q": 3, "scenario": "You are a horror fan looking for something that is actually scary and creepy, not just silly. You are considering “The Uninvited (The Criterion Collection) [DVD]”.", "A": "I enjoyed the extras- a small essay and several \"extras\" were included. It's in black and white, but that was part of its' charm. A brother and sister stumble upon an old deserted manor and it is love at first sight. It was great but I would have like to see special features including the stars interviews and movie interpretations. My girls and I love to watch this at night with all the lights out, except those from the tv.", "B": "Looking back I see now that while those episodes about ghosts borrowed from this movie, THE UNINVITED borrowed heavily from Hitchcock's REBECCA with its old house, sinister portrait and devoted matron plot elements. HIghly recommended for fans of both melodrama and gothic horror. Creepy good fun that even people who usually don't like this genre will enjoy. The spooks without the gore. Probably one of the best ghost stories of the scary variety (unlike the wonderful \"The Ghost and Mrs. Muir\" ever made."}, {"q": 4, "scenario": "You mostly watch films for strong performances. You only want to spend an evening on this if the cast is convincing. You are considering “The Poseidon Adventure”.", "A": "Titanic wishes it had all that! It is in the Tao of life, conservative (the old priest waiting for help) and progressive (Hackman pointing to the exit, life is up there, keep moving), up and down (inside the ship), police and call girl, boy and girl,and life and death. You also get to see Leslie Neilson in a straight role as the ship's captain, infuriated by the reckless cost cutting of the owners... My family has made a ritual of watching this every New Years Eve (for the last ten at least). Great movie, pleased with purchase and fast shipping.", "B": "Casting and characterisation is generally good (with just some corn at times, hell this was the 1970s...). Great cast (combining the talents of 15 Academy Award winners) including the BRILLIANT Shelley Winters who gives a heart wrenching performance as a plump jewish grandmother trying to survive to see her grandson. And Stella Stevens's mature figure was far too appealing to be wasted on the likes of Borgnine. Carol Lynley is also terrific to look at, especially when she lip-synchs the theme song. (The Earnest Borgnine and Shelley Winters characters are pretty awesome and make you understand why both had such successful careers.)"}, {"q": 5, "scenario": "What matters most to you is a gripping, well-constructed story. You are considering “Valerian and the City of a Thousand Planets”.", "A": "Very cool, nice plot. However, the love story does not hold up as well. Could have been great but short sighted story with human behavior characterized by power hungry, genocidal, and the sexual harassment of women. Loved the effects and the imagination of the story. interesting and original premise, but bad acting and cliché love story.", "B": "I had looked forward to this, because I love sci-fi and wanted a 5th Element type journey, but this was sorely lacking. Phenomenal effects with cheesy dialogue. Fun on our big screen tv. I was generous and gave it two stars, just for the special effects. The storyline was great."}, {"q": 6, "scenario": "For you a film's music makes or breaks it; you are hoping for a memorable soundtrack or songs. You are considering “Baby Genius Favorite Nursery Rhymes w/bonus Music CD”.", "A": "I ordered this for my grandson thinking it was a baby einstein video. However, this one mixes more live action with cartoon characters and does add some extras like \"London Bridge\", \"She'll Be Coming 'Round the Mountain\" & several others. He seemed to like it and would watch it almost all the way through. on time, as described, love the product, very satisfied As soon as this DVD starts they begin clapping so now we save it \"special occassions\" when we're in desperate need of a smile (sick days, long car rides, etc.)", "B": "We danced , ad sang and had a good time. And the CD comes with 25 songs!!!! The singers are not so bad but nothing amazing as well. He was rocking with the music and enjoying I also walk around the house singing the songs."}, {"q": 7, "scenario": "You hate investing two hours in a film only to be let down by the ending. You are considering “Predestination [Blu-ray]”.", "A": "You might be able to figure out the end before it gets there, but I'd say it's still satisfying. Ending is for sure a mind blow. Yet I ended the show feeling like, even though I understood the basics of what had happened, there was still this atmosphere of mystery, leaving me feeling as if I had stared into a deep pool and only seen a portion of what lay therein. Pay attention from the opening scene as it sets up the basis for the rest of the movie and the ending. A bit hard to follow at first but then I finally got it towards the end.", "B": "It was made in Australia. I found it interesting at first, and as it went on got so convoluted that I thought, if a lizard turns around and bits it tail is that interesting. To say much more would give away much of the surprise and suspense. Good deal for the price! this review is mafe on the blu ray version of the movie- as follows-"}, {"q": 8, "scenario": "You want something historically accurate and informative, not a loose dramatisation. You are considering “Wolf Hall”.", "A": "Great show, interesting perspective on the times of Henry VIII And, sure, for Americans not familiar with the British history of this period it can be confusing at first. Gives you some historical context for what ISIL is up too. Fascinating historical account. It was also very informative.", "B": "So dark and dreary.... it's a bad spin off of the Tudors ! I have come to enjoy watching on Amazon so much I may cut the cord this year. Incredibly well acted, settings and costumes that take you right back to early 1500s England. Besides all of that it is very entertaining. Can not beat PBS masterpiece theater and their productions."}, {"q": 9, "scenario": "You are buying the disc edition of “Titus - Seasons 1 & 2 [DVD]” for your collection. You care about picture and sound quality and whether the disc plays properly.", "A": "All it takes is a corprate brat or one critic to whine about it.....and BAM!, your canceled. Based on Chris Titus' own life (dear heavens, you wonder how the boy survived), it's howling funny in places, tender in others, slightly risque in still others - a wonderful mix. Showed on time and in condition described. Thanks Christopher Titus and crew for a great series. In one of the flashbacks, when Titus falls in the bonfire... That alone is worth the price of this set...", "B": "It doesn't have the \"CC\" on the box, but the small print does state so. So of course when it came out on DVD I had to get them all. The Titus Seasons 1 & 2 DVD box sets arrived on time and was in excellent condition. I have looked for this dvd set for a couple years excellent I have the complete series now thank you I had got this DVD for my boyfriend as a gift and I personally had never seen this show."}, {"q": 10, "scenario": "You are looking for a new series to binge over the next few weeks and want to know whether it stays good across episodes and seasons. You are considering “Empire Season 1”.", "A": "After watching the premier episode, I was convinced that this program was little more than Hustle & Flow, 25 years later! I mean there are other people on this show but I didnt notice them Waiting to purchase season 2. Can't wait to get season2. Said she saw the episodes on TV but hasn't gotten to watch them all yet.", "B": "......AWEASOME SAUCE AND RELATABLE! Totally mind blowing best drama EVER. I was not given a code to retrieve this item. My take is that this program solidifies Taraji and Terrance are a talented, powerful and dynamic duo on any scene, or potentially, on any stage. Loved really watching it,it was raining and we popped pop corn and it was a great family day."}]};
+const STORE_KEY = "prefer-study-" + STUDY_VERSION;
+const N1 = ITEMS.intrusion.length, N2 = ITEMS.personalization.length;
+
+function rand(n) { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
+function shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rand(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function newId() { const a = new Uint8Array(8); crypto.getRandomValues(a); return Array.from(a, b => b.toString(16).padStart(2, "0")).join(""); }
+
+let S = null;
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {} }
+function load() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) { return null; } }
+function clearSaved() { try { localStorage.removeItem(STORE_KEY); } catch (e) {} }
+
+function freshState(pid) {
+  const order1 = SHUFFLE_QUESTION_ORDER ? shuffle(ITEMS.intrusion.map((_, i) => i)) : ITEMS.intrusion.map((_, i) => i);
+  const order2 = SHUFFLE_QUESTION_ORDER ? shuffle(ITEMS.personalization.map((_, i) => i)) : ITEMS.personalization.map((_, i) => i);
+  return {
+    version: STUDY_VERSION, participant_id: pid, session_id: newId(),
+    started_at: new Date().toISOString(), phase: "intro1", idx: 0,
+    plan1: order1.map(i => ({ item: i, display: shuffle([0, 1, 2, 3]) })),
+    plan2: order2.map(i => ({ item: i, left: rand(2) ? "A" : "B" })),
+    intrusion: [], personalization: [], submitted: false
+  };
+}
+
+/* ---------- tiny DOM helper ---------- */
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, "");
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(k));
+  return e;
+}
+const stage = document.getElementById("stage");
+function show(node) { node.addEventListener("change", () => node.querySelectorAll(".msg").forEach(m => m.textContent = "")); stage.replaceChildren(node); node.classList.add("enter"); window.scrollTo(0, 0); renderProgress(); }
+
+function radio(name, value, content) {
+  return h("label", { class: "opt" },
+    h("input", { type: "radio", name, value }),
+    h("span", { class: "face" }, h("span", { class: "dot", "aria-hidden": "true" }), h("span", {}, content)));
+}
+function scaleRadio(name, value) {
+  return h("label", { class: "opt" }, h("input", { type: "radio", name, value, "aria-label": value + " of 5" }), h("span", { class: "face" }, String(value)));
+}
+function picked(root, name) { const r = root.querySelector(`input[name="${name}"]:checked`); return r ? r.value : null; }
+
+/* ---------- progress reel ---------- */
+function renderProgress() {
+  const p = document.getElementById("progress");
+  if (!S || ["welcome", "done"].includes(S.phase)) { p.replaceChildren(); return; }
+  const done1 = S.intrusion.length, done2 = S.personalization.length;
+  const strip = (n, done, active) => h("div", { class: "strip" },
+    Array.from({ length: n }, (_, i) => h("span", { class: "frame" + (i < done ? " done" : (active && i === done ? " now" : "")) })));
+  p.replaceChildren(h("div", { class: "reel" },
+    h("div", {}, strip(N1, done1, S.phase === "q1"), h("div", { class: "reel-label" }, "Part 1")),
+    h("div", {}, strip(N2, done2, S.phase === "q2"), h("div", { class: "reel-label" }, "Part 2"))));
+}
+
+/* ---------- screens ---------- */
+function marquee() {
+  const bulbs = () => h("div", { class: "bulbs", "aria-hidden": "true" }, Array.from({ length: 14 }, () => h("span")));
+  return h("header", { class: "marquee" }, bulbs(),
+    h("h1", {}, "Now reviewing"),
+    h("p", {}, "A short study on how people read movie reviews"), bulbs());
+}
+
+function screenWelcome() {
+  const saved = load();
+  const wrap = h("div", {});
+  wrap.append(marquee());
+  if (saved && !saved.submitted && saved.phase !== "welcome") {
+    wrap.append(h("section", { class: "screen" },
+      h("h2", {}, "Pick up where you left off"),
+      h("p", { class: "lede" }, `You have an unfinished session as participant “${saved.participant_id}”.`),
+      h("div", { class: "actions" },
+        h("button", { class: "go", onclick: () => { S = saved; route(); } }, "Continue my session"),
+        h("button", { class: "plain", onclick: () => { clearSaved(); S = null; route(); } }, "Start over"))));
+    return show(wrap);
+  }
+  const msg = h("p", { class: "msg", role: "alert" });
+  const pid = h("input", { type: "text", id: "pid", autocomplete: "off", spellcheck: "false" });
+  const agree = h("input", { type: "checkbox", id: "agree" });
+  wrap.append(h("section", { class: "screen prose" },
+    h("h2", {}, "Welcome, and thank you for helping"),
+    h("p", {}, "This study has two parts, each with 10 questions, and takes about 15 minutes. Everything you read comes from real Amazon customer reviews of movies and TV shows."),
+    h("p", {}, "In Part 1 you will spot the sentence that is about something different. In Part 2 you will choose which of two review summaries helps you more with a decision, and rate each one."),
+    h("p", {}, "Every question needs an answer before you can move on, and answers can't be changed once you continue, so take your time. There are no right or wrong answers in the sense of a test: we want your honest first impression. We don't collect your name or email."),
+    h("div", { class: "field" }, h("label", { for: "pid" }, "Participant ID (as given to you by the researcher)"), pid),
+    h("div", { class: "field check" }, agree, h("label", { for: "agree", style: "font-weight:400" }, "I am 18 or older and agree to take part. I understand my anonymous answers will be used for research.")),
+    msg,
+    h("div", { class: "actions" }, h("button", { class: "go", onclick: () => {
+      const v = pid.value.trim();
+      if (!v) { msg.textContent = "Enter your participant ID to begin."; pid.focus(); return; }
+      if (!agree.checked) { msg.textContent = "Tick the consent box to begin."; agree.focus(); return; }
+      S = freshState(v); save(); route();
+    } }, "Begin the study"))));
+  show(wrap);
+}
+
+function screenIntro1() {
+  show(h("section", { class: "screen prose" },
+    h("p", { class: "where" }, "Part 1 of 2"),
+    h("h2", {}, "Which sentence does not belong?"),
+    h("p", {}, "Each question shows four sentences from reviews. Three talk about the same kind of thing, such as the acting or the DVD quality. One talks about something different. Pick that one."),
+    h("p", {}, "Ignore whether a sentence is positive or negative; focus on what it is about. Go with your first impression."),
+    h("div", { class: "actions" }, h("button", { class: "go", onclick: () => { S.phase = "q1"; S.idx = 0; save(); route(); } }, "Start Part 1"))));
+}
+
+function screenQ1() {
+  const step = S.plan1[S.idx], item = ITEMS.intrusion[step.item];
+  const t0 = performance.now(), name = "q1_" + S.idx;
+  const msg = h("p", { class: "msg", role: "alert" });
+  const fs = h("fieldset", { class: "options" },
+    h("legend", { class: "sr" }, "Choose the sentence that is about something different"),
+    step.display.map(orig => radio(name, String(orig + 1), item.options[orig])));
+  const last = S.idx === N1 - 1;
+  const node = h("section", { class: "screen" },
+    h("p", { class: "where" }, `Part 1, question ${S.idx + 1} of ${N1}`),
+    h("h2", {}, "Which sentence is about something different?"),
+    h("p", { class: "lede" }, "Three sentences share a topic. Pick the odd one out."),
+    fs, h("div", { class: "actions" },
+      h("button", { class: "go", onclick: () => {
+        const v = picked(fs, name);
+        if (!v) { msg.textContent = "Choose a sentence to continue."; fs.querySelector("input").focus(); return; }
+        S.intrusion.push({ q: item.q, position: S.idx + 1, display_order: step.display.map(i => i + 1),
+          choice: Number(v), rt_ms: Math.round(performance.now() - t0) });
+        if (last) S.phase = "intro2"; else S.idx++;
+        save(); route();
+      } }, last ? "Finish Part 1" : "Next question"), msg));
+  show(node);
+}
+
+function screenIntro2() {
+  show(h("section", { class: "screen prose" },
+    h("p", { class: "where" }, "Part 1 done. Part 2 of 2"),
+    h("h2", {}, "Which review summary helps you decide?"),
+    h("p", {}, "Each question describes a situation and a movie or show you are considering. Below it are two summaries of that title's customer reviews."),
+    h("p", {}, "Imagine you are the person in the situation. First rate how well each summary covers what you care about, then pick the one that would help you more with the decision. Both summaries come from real reviews; judge only how useful each is for this decision."),
+    h("div", { class: "actions" }, h("button", { class: "go", onclick: () => { S.phase = "q2"; S.idx = 0; save(); route(); } }, "Start Part 2"))));
+}
+
+function screenQ2() {
+  const step = S.plan2[S.idx], item = ITEMS.personalization[step.item];
+  const t0 = performance.now();
+  const sides = step.left === "A" ? ["A", "B"] : ["B", "A"];
+  const nm = s => `q2_${S.idx}_${s}`;
+  const msg = h("p", { class: "msg", role: "alert" });
+  const panel = (label, i) => h("article", { class: "summary" },
+    h("h3", {}, `Summary ${i + 1}`),
+    h("p", { class: "text" }, item[label]),
+    h("fieldset", { class: "rate" },
+      h("legend", {}, "How well does this summary cover what you care about here?"),
+      h("div", { class: "scale" }, [1, 2, 3, 4, 5].map(v => scaleRadio(nm("rate_" + label), String(v)))),
+      h("div", { class: "scale-ends", "aria-hidden": "true" }, h("span", {}, "1 Not at all"), h("span", {}, "5 Completely"))));
+  const choice = h("fieldset", { class: "choice" },
+    h("legend", {}, "Which summary helps you more with this decision?"),
+    h("div", { class: "options" }, sides.map((label, i) => radio(nm("choice"), label, `Summary ${i + 1}`))));
+  const last = S.idx === N2 - 1;
+  const node = h("section", { class: "screen wide" },
+    h("p", { class: "where" }, `Part 2, question ${S.idx + 1} of ${N2}`),
+    h("h2", {}, "Your situation"),
+    h("p", { class: "situation" }, item.scenario),
+    h("div", { class: "pair" }, sides.map(panel)),
+    choice,
+    h("div", { class: "actions" },
+      h("button", { class: "go", onclick: () => {
+        const rA = picked(node, nm("rate_A")), rB = picked(node, nm("rate_B")), c = picked(node, nm("choice"));
+        const leftRated = sides[0] === "A" ? rA : rB, rightRated = sides[0] === "A" ? rB : rA;
+        if (!leftRated) { msg.textContent = "Rate Summary 1 to continue."; return; }
+        if (!rightRated) { msg.textContent = "Rate Summary 2 to continue."; return; }
+        if (!c) { msg.textContent = "Choose which summary helps you more to continue."; return; }
+        S.personalization.push({ q: item.q, position: S.idx + 1, left: step.left, choice: c,
+          rating_A: Number(rA), rating_B: Number(rB), rt_ms: Math.round(performance.now() - t0) });
+        if (last) { S.phase = "submit"; S.finished_at = new Date().toISOString(); } else S.idx++;
+        save(); route();
+      } }, last ? "Finish and send my answers" : "Next question"), msg));
+  show(node);
+}
+
+class ServerError extends Error {}
+async function send(payload) {
+  if (!/^https:\/\/script\.google\.com\//.test(ENDPOINT)) throw new ServerError("The survey isn't connected to its results sheet yet.");
+  const body = JSON.stringify(payload);
+  try {
+    const r = await fetch(ENDPOINT, { method: "POST", body, headers: { "Content-Type": "text/plain;charset=utf-8" } });
+    const j = await r.json();
+    if (!j.ok) throw new ServerError(j.error || "The results sheet rejected the answers.");
+    return "confirmed";
+  } catch (e) {
+    if (e instanceof ServerError) throw e;
+    // CORS-blocked read: send blind; the backend de-duplicates by session_id.
+    await fetch(ENDPOINT, { method: "POST", mode: "no-cors", body, headers: { "Content-Type": "text/plain;charset=utf-8" } });
+    return "sent";
+  }
+}
+
+function payload() {
+  return { version: S.version, participant_id: S.participant_id, session_id: S.session_id,
+    started_at: S.started_at, finished_at: S.finished_at, user_agent: navigator.userAgent,
+    viewport: `${innerWidth}x${innerHeight}`, intrusion: S.intrusion, personalization: S.personalization };
+}
+
+async function screenSubmit() {
+  const msg = h("p", { class: "msg", role: "alert" });
+  const retry = h("button", { class: "go", onclick: () => screenSubmit() }, "Try sending again");
+  const download = h("button", { class: "plain", onclick: () => {
+    const blob = new Blob([JSON.stringify(payload(), null, 1)], { type: "application/json" });
+    const a = h("a", { href: URL.createObjectURL(blob), download: `answers-${S.participant_id}-${S.session_id}.json` });
+    document.body.append(a); a.click(); a.remove();
+  } }, "Download my answers to email to the researcher");
+  show(h("section", { class: "screen" }, h("h2", {}, "Sending your answers"), h("p", { class: "lede" }, "One moment.")));
+  try {
+    await send(payload());
+    S.submitted = true; S.phase = "done"; save(); route();
+  } catch (e) {
+    msg.textContent = (e.message || "Sending failed") + " Check your connection and try again. Your answers are saved in this browser.";
+    show(h("section", { class: "screen" }, h("h2", {}, "Your answers haven't been sent yet"), msg,
+      h("div", { class: "actions" }, retry, download)));
+  }
+}
+
+function screenDone() {
+  const code = (S.session_id || "").slice(0, 8).toUpperCase();
+  const wrap = h("div", {}, marquee());
+  wrap.querySelector("h1").textContent = "That's a wrap";
+  wrap.querySelector(".marquee p").textContent = "Your answers have been recorded";
+  wrap.append(h("section", { class: "screen prose" },
+    h("h2", {}, "Thank you for taking part"),
+    h("p", {}, "If the researcher asked for a completion code, here it is:"),
+    h("p", { class: "code" }, code),
+    h("p", {}, "You can close this page now."),
+    h("div", { class: "actions" }, h("button", { class: "plain", onclick: () => { clearSaved(); S = null; route(); } }, "Start a new session for the next participant"))));
+  show(wrap);
+}
+
+function route() {
+  if (!S) return screenWelcome();
+  ({ intro1: screenIntro1, q1: screenQ1, intro2: screenIntro2, q2: screenQ2, submit: screenSubmit, done: screenDone })[S.phase]();
+}
+
+addEventListener("beforeunload", e => { if (S && !S.submitted && S.phase !== "welcome") { e.preventDefault(); e.returnValue = ""; } });
+
+(function start() {
+  const saved = load();
+  if (saved && saved.submitted) { S = saved; return route(); }
+  S = null; route();
+})();
+</script>
+<style>.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }</style>
+</body>
+</html>
