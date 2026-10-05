@@ -20,6 +20,7 @@ from .utils import kl_divergence, get_phi_matrix,ensure_global_index, normalize_
 from sklearn.metrics.pairwise import cosine_similarity
 
 from .extractors.base import BaseExtractor
+from .quality import quality_log_fields
 
 def run_online_experiment(
     *,
@@ -44,6 +45,9 @@ def run_online_experiment(
     oracle_noise_scale: float = 0.03,
     seed: int = 42,
     w_init_override: Optional[np.ndarray] = None,
+    summary_builder: Optional[Callable] = None,
+    quality_method_name: Optional[str] = None,
+    target_profile: Optional[str] = None,
     verbose: bool = True,
 ):
     """
@@ -64,6 +68,12 @@ def run_online_experiment(
         - synthetic_oracle: whether to create a synthetic oracle preference w_true for testing
         - oracle_noise_scale: noise scale for creating synthetic oracle preference
         - seed: random seed for reproducibility
+        - summary_builder: optional callable that generates the displayed summary from
+          the selected evidence before feedback is requested. It is called with keyword
+          arguments selected_df, user_id, product_id, t, and extraction_result. 
+        - quality_method_name: label used by the text-quality evaluator, e.g.
+            "online", "static", or "generic". Defaults to use_policy.
+        - target_profile: optional natural-language profile shown to the held-out judge.       
     The experiment proceeds in rounds, iterating over the given product_ids. 
     Initialize w_init -> interact -> update w -> track learning dynamics and logs.
     At round t, it does:
@@ -123,6 +133,7 @@ def run_online_experiment(
     num_valid_rounds = 0
     history = []
     logs = []
+    w_true_t  = w_true
 
     # Step 4: Main online learning loop over product_ids (rounds).
     for t, product_id in enumerate(product_ids):
@@ -177,6 +188,37 @@ def run_online_experiment(
 
         if out is None or len(out.selected_df) == 0:
             continue
+
+        # Generate the actual summary shown to the simulated/real user before
+        # requesting feedback. Previously the code only looked for
+        # out.meta["summary_text"], but the extractors do not create it.
+        summary_text = out.meta.get("summary_text", None)
+        summary_payload = None
+        if summary_builder is not None:
+            summary_payload = summary_builder(
+                selected_df=out.selected_df,
+                user_id=user_id,
+                product_id=product_id,
+                t=t,
+                extraction_result=out,
+            )
+            if isinstance(summary_payload, str):
+                summary_text = summary_payload
+            elif isinstance(summary_payload, dict):
+                for key in ("summary_text", "final_summary", "final", "summary"):
+                    value = summary_payload.get(key)
+                    if value is not None and str(value).strip():
+                        summary_text = str(value).strip()
+                        break
+            elif summary_payload is not None:
+                raise TypeError(
+                    "summary_builder must return a string, a dictionary containing "
+                    "summary_text/final_summary/final/summary, or None."
+                )
+
+        if summary_text is not None:
+            summary_text = str(summary_text).strip()
+            out.meta["summary_text"] = summary_text
 
         z_sum += np.asarray(out.z_t, dtype=float)
         num_valid_rounds += 1
@@ -286,7 +328,34 @@ def run_online_experiment(
             "selected_global_idx": out.selected_global_idx.copy(),
             "w_boltz": w_boltz.copy(),
             "w_omd": w_logged.copy(),
+            "summary_text": summary_text,
         }
+
+        # Preserve the exact selected HIGH/MID/LOW evidence and the displayed
+        # summary so text quality can be evaluated after the experiment.
+        quality_label = quality_method_name or use_policy
+        log.update(
+            quality_log_fields(
+                selected_df=out.selected_df,
+                summary_payload=(
+                    summary_payload if isinstance(summary_payload, dict) else None
+                ),
+                summary_text=summary_text,
+                user_id=user_id,
+                seed=seed,
+                round_id=t,
+                product_id=product_id,
+                method=quality_label,
+                target_profile=target_profile,
+            )
+        )
+        if summary_payload is not None and isinstance(summary_payload, dict):
+            # Keep only lightweight scalar/string metadata in the main log.
+            log["summary_payload_keys"] = sorted(str(key) for key in summary_payload.keys())
+        judge_record = getattr(feedback_provider, "last_record", None)
+        if judge_record is not None:
+            log["judge_record"] = judge_record
+
         log["omd_baseline"] = omd_dbg["baseline_t"]
         log["omd_f_eff"] = omd_dbg["f_eff"]
         log["w_omd_avg"] = w_logged_avg
